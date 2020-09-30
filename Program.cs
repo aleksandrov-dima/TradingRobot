@@ -19,7 +19,7 @@ namespace TradingRobot
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddHostedService<RealRobotTradingService>();
+                    services.AddHostedService<SandboxRobotTradingService>();
                 });
     }
 }

@@ -25,7 +25,7 @@ namespace TradingRobot.Services
             _logger.LogInformation("Robot Trading Service running.");
             
             string token = File.ReadAllText("token.txt").Trim();
-            _sandboxRobot = new SandboxRobot(new EasyStrategy(new AutoSettingProvider()), token);
+            _sandboxRobot = new SandboxRobot(new EasyBaseStrategy(new AutoSettingProvider()), token);
             
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
                 TimeSpan.FromSeconds(3));

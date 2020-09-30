@@ -16,17 +16,17 @@ namespace TradingRobot.Models
     {
         private static readonly Random _random = new Random();
         private readonly SandboxContext _context;
-        private ITradingStrategy _tradingStrategy;
+        private TradingBaseStrategy _tradingBaseStrategy;
         private string? _accountId;
         private IList<TradePosition> _tradePositions;
 
 
-        public SandboxRobot(ITradingStrategy tradingStrategy, string token)
+        public SandboxRobot(TradingBaseStrategy tradingBaseStrategy, string token)
         {
             var connection = ConnectionFactory.GetSandboxConnection(token);
             _context = connection.Context;
-            _tradingStrategy = tradingStrategy;
-            _tradingStrategy.Context = _context;
+            _tradingBaseStrategy = tradingBaseStrategy;
+            _tradingBaseStrategy.Context = _context;
             _tradePositions = new List<TradePosition>();
         }
         
@@ -68,7 +68,8 @@ namespace TradingRobot.Models
         {
             //получаем текущий портфель на счете 
             var portfolio = await _context.PortfolioAsync(_accountId);
-            if (portfolio.Positions.Count == 0)
+            if (!portfolio.Positions.Any(
+                p => _tradingBaseStrategy.SettingProvider.TradeFigis.Any(t => t.Equals(p.Figi))))
             {
                 await InitialBalance();
 
@@ -76,7 +77,7 @@ namespace TradingRobot.Models
             }
             else
             {
-                foreach (var tradeFigi in _tradingStrategy.SettingProvider.TradeFigis)
+                foreach (var tradeFigi in _tradingBaseStrategy.SettingProvider.TradeFigis)
                 {
                     var tradePosition = new TradePosition(tradeFigi);
                     tradePosition.PortfolioPosition = portfolio.Positions.FirstOrDefault(x => x.Figi == tradeFigi);
@@ -95,10 +96,14 @@ namespace TradingRobot.Models
         {
             //инициализируем начальный баланс случайными значениями
             foreach (var currency in new[] {Currency.Rub, Currency.Usd, Currency.Eur})
-                await _context.SetCurrencyBalanceAsync(currency, _random.Next(2, 10) * 100_000, _accountId);
+                await _context.SetCurrencyBalanceAsync(currency, _random.Next(3, 10) * 1_000_000, _accountId);
 
-            //покупаем акции Сбербанка 1 лот = 10 акций
-            await _context.PlaceMarketOrderAsync(new MarketOrder("BBG0047315Y7", 1, OperationType.Buy, _accountId));
+            //покупаем акции по FIGI, которые в настройках
+            foreach (string tradeFigi in _tradingBaseStrategy.SettingProvider.TradeFigis)
+            {
+                await _context.PlaceMarketOrderAsync(new MarketOrder(tradeFigi, 1, OperationType.Buy, _accountId));    
+            }
+            
         }
 
         /// <summary>
@@ -165,7 +170,7 @@ namespace TradingRobot.Models
         {
             foreach (var position in _tradePositions)
             {
-                await _tradingStrategy.SettingProvider.SetOptionsTradingPosition(position);
+                await _tradingBaseStrategy.SettingProvider.SetOptionsTradingPosition(position);
             }
         }
 
@@ -177,7 +182,7 @@ namespace TradingRobot.Models
         {
             foreach (var tradePosition in _tradePositions)
             {
-                await _tradingStrategy.PerformBuyOrSell(tradePosition);
+                await _tradingBaseStrategy.PerformBuyOrSell(tradePosition);
             }
         }
 

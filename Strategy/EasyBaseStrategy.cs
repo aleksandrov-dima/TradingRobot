@@ -10,9 +10,9 @@ namespace TradingRobot.Strategy
     /// Самая простая стратегия торговли.
     /// Основана на достижении пороговых точек покупки и продажи
     /// </summary>
-    public class EasyStrategy: ITradingStrategy
+    public class EasyBaseStrategy: TradingBaseStrategy
     {
-        public EasyStrategy(ISettingProvider settingProvider) : base(settingProvider)
+        public EasyBaseStrategy(ISettingProvider settingProvider) : base(settingProvider)
         {
         }
 
@@ -26,6 +26,7 @@ namespace TradingRobot.Strategy
             var options = tradePosition.Options as EasyTradeOptions;
 
             tradePosition.IsStateChanged = false;
+            MarketOrder marketOrder = null;
             
             if (tradePosition.PrevOperationType == OperationType.Buy)
             {
@@ -34,11 +35,11 @@ namespace TradingRobot.Strategy
                 if (options != null && (tradePosition.LastPrice >= options.ProfitThreshold 
                                         || tradePosition.LastPrice <= options.StopLossThreshold))
                 {
-                    await Context.PlaceMarketOrderAsync(new MarketOrder(tradePosition.PortfolioPosition.Figi,
+                    marketOrder = new MarketOrder(tradePosition.PortfolioPosition.Figi,
                         tradePosition.PortfolioPosition.Lots,
                         OperationType.Sell,
-                        AccountId));
-                    
+                        AccountId);
+
                     tradePosition.IsStateChanged = true;
                 }
             }
@@ -49,14 +50,25 @@ namespace TradingRobot.Strategy
                                         /*|| tradePosition.LastPrice >= options.UpwardTrendThreshold*/)
                 {
                     //TODO: здесь надо вычислять сколько лотов можем купить
-                    
-                    await Context.PlaceMarketOrderAsync(new MarketOrder(tradePosition.PortfolioPosition.Figi,
+
+                    marketOrder = new MarketOrder(tradePosition.PortfolioPosition.Figi,
                         1,
                         OperationType.Buy,
-                        AccountId));
+                        AccountId);
                     
                     tradePosition.IsStateChanged = true;
                 }
+            }
+
+            if (tradePosition.IsStateChanged && marketOrder != null)
+            {
+                var placedMarketOrder = await Context.PlaceMarketOrderAsync(marketOrder);
+                
+                TradeOperationInfo tradeOperationInfo = new TradeOperationInfo();
+                tradeOperationInfo.MarketOrder = marketOrder;
+                tradeOperationInfo.PlacedMarkedOrder = placedMarketOrder;
+
+                ActionOperation?.BeginInvoke(tradeOperationInfo, null, null);
             }
         }
     }

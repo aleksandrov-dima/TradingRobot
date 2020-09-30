@@ -26,7 +26,7 @@ namespace TradingRobot.Services
             _logger.LogInformation("Real Robot Trading Service running.");
             
             string token = File.ReadAllText("realtoken.txt").Trim();
-            _realRobot = new RealRobot(new EasyStrategy(new AutoSettingProvider()), token);
+            _realRobot = new RealRobot(new EasyBaseStrategy(new AutoSettingProvider()), token);
             
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
                 TimeSpan.FromSeconds(3));

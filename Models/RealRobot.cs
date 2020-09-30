@@ -14,15 +14,15 @@ namespace TradingRobot.Models
     public class RealRobot : IRobot
     {
         private readonly Context _context;
-        private ITradingStrategy _tradingStrategy;
+        private TradingBaseStrategy _tradingBaseStrategy;
         private string _accountId = "2033152246";
         private IList<TradePosition> _tradePositions;
-        public RealRobot(ITradingStrategy tradingStrategy, string token)
+        public RealRobot(TradingBaseStrategy tradingBaseStrategy, string token)
         {
             var connection = ConnectionFactory.GetConnection(token);
             _context = connection.Context;
-            _tradingStrategy = tradingStrategy;
-            _tradingStrategy.Context = _context;
+            _tradingBaseStrategy = tradingBaseStrategy;
+            _tradingBaseStrategy.Context = _context;
             _tradePositions = new List<TradePosition>();
         }
 
@@ -50,7 +50,7 @@ namespace TradingRobot.Models
             //получаем текущий портфель на счете 
             var portfolio = await _context.PortfolioAsync(_accountId);
             
-            foreach (var tradeFigi in _tradingStrategy.SettingProvider.TradeFigis)
+            foreach (var tradeFigi in _tradingBaseStrategy.SettingProvider.TradeFigis)
             {
                 TradePosition currentTradePosition = _tradePositions.FirstOrDefault(p => p.Figi == tradeFigi);
                 if (currentTradePosition == null)
@@ -128,7 +128,7 @@ namespace TradingRobot.Models
         {
             foreach (var position in _tradePositions)
             {
-                await _tradingStrategy.SettingProvider.SetOptionsTradingPosition(position);
+                await _tradingBaseStrategy.SettingProvider.SetOptionsTradingPosition(position);
             }
         }
         
@@ -140,7 +140,7 @@ namespace TradingRobot.Models
         {
             foreach (var tradePosition in _tradePositions)
             {
-                await _tradingStrategy.PerformBuyOrSell(tradePosition);
+                await _tradingBaseStrategy.PerformBuyOrSell(tradePosition);
             }
         }
 
