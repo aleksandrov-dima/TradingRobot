@@ -32,8 +32,8 @@ namespace TradingRobot.Models
                 _portfolioPosition = value;
                 if (_portfolioPosition != null)
                 {
-                    _avgPrice = _portfolioPosition.AveragePositionPrice.Value;
-                    _profitSum = _portfolioPosition.ExpectedYield.Value;
+                    _avgPrice = _portfolioPosition.AveragePositionPrice != null ? _portfolioPosition.AveragePositionPrice.Value : 0m;
+                    _profitSum = _portfolioPosition.ExpectedYield != null ? _portfolioPosition.ExpectedYield.Value : 0m;
                 }
             }
         }

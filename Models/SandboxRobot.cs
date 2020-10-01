@@ -27,9 +27,15 @@ namespace TradingRobot.Models
             _context = connection.Context;
             _tradingBaseStrategy = tradingBaseStrategy;
             _tradingBaseStrategy.Context = _context;
+            _tradingBaseStrategy.OnActionOperation += ProcessEventOperation;
             _tradePositions = new List<TradePosition>();
         }
-        
+
+        private void ProcessEventOperation(TradeOperationInfo tradeOperationInfo)
+        {
+            //TODO: отправить сообщение в шину
+        }
+
         public override async Task StartTradeAsync()
         {
             //регистрируем аккаунт в песочнице если это еще не сделано
@@ -68,8 +74,7 @@ namespace TradingRobot.Models
         {
             //получаем текущий портфель на счете 
             var portfolio = await _context.PortfolioAsync(_accountId);
-            if (!portfolio.Positions.Any(
-                p => _tradingBaseStrategy.SettingProvider.TradeFigis.Any(t => t.Equals(p.Figi))))
+            if (!portfolio.Positions.Any(p => p.InstrumentType == InstrumentType.Currency && p.Balance > 0))
             {
                 await InitialBalance();
 
@@ -79,11 +84,15 @@ namespace TradingRobot.Models
             {
                 foreach (var tradeFigi in _tradingBaseStrategy.SettingProvider.TradeFigis)
                 {
-                    var tradePosition = new TradePosition(tradeFigi);
-                    tradePosition.PortfolioPosition = portfolio.Positions.FirstOrDefault(x => x.Figi == tradeFigi);
-                
-                    _tradePositions.Add(tradePosition);
-                }   
+                    TradePosition currentTradePosition = _tradePositions.FirstOrDefault(p => p.Figi == tradeFigi);
+                    if (currentTradePosition == null)
+                    {
+                        currentTradePosition = new TradePosition(tradeFigi);
+                        _tradePositions.Add(currentTradePosition);
+                    }
+                    //обновляем портфелльную позицию
+                    currentTradePosition.PortfolioPosition = portfolio.Positions.FirstOrDefault(x => x.Figi == tradeFigi);
+                }  
             }
         }
         
@@ -121,7 +130,7 @@ namespace TradingRobot.Models
                 {
                     //список всех оперций по позиции
                     var operations =
-                        await _context.OperationsAsync(fromDate, toDate, tradePosition.PortfolioPosition.Figi, _accountId);
+                        await _context.OperationsAsync(fromDate, toDate, tradePosition.Figi, _accountId);
 
                     //узнаем тип последней операции (Buy или Sell)
                     var lastOperationList = operations.OrderByDescending(x => x.Date).ToList();
@@ -147,7 +156,7 @@ namespace TradingRobot.Models
         private async Task CalcLastPrice(TradePosition tradePosition)
         {
             //Получаем текущую цену - это цена LastPrice, которая передается вместе со стаканом заявок
-            var orderbook = await _context.MarketOrderbookAsync(tradePosition.PortfolioPosition.Figi, 1);
+            var orderbook = await _context.MarketOrderbookAsync(tradePosition.Figi, 1);
             tradePosition.LastPrice = orderbook.LastPrice;
 
             if (tradePosition.PortfolioPosition == null)

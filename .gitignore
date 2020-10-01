@@ -5,3 +5,7 @@ riderModule.iml
 /_ReSharper.Caches/
 token.txt
 realtoken.txt
+/.vs/TradingRobot/DesignTimeBuild/.dtbcache.v2
+/.vs/TradingRobot/v16/.suo
+/.vs/TradingRobot/v16/TestStore/0/000.testlog
+/.vs/TradingRobot/v16/TestStore/0/testlog.manifest

@@ -79,7 +79,7 @@ namespace TradingRobot.Models
                 {
                     //список всех оперций по позиции, чтобы узнать последнюю операцию
                     var operations =
-                        await _context.OperationsAsync(fromDate, toDate, tradePosition.PortfolioPosition.Figi, _accountId);
+                        await _context.OperationsAsync(fromDate, toDate, tradePosition.Figi, _accountId);
 
                     //узнаем тип последней операции (Buy или Sell)
                     var lastOperationList = operations.OrderByDescending(x => x.Date).ToList();
@@ -105,7 +105,7 @@ namespace TradingRobot.Models
         private async Task CalcLastPrice(TradePosition tradePosition)
         {
             //Получаем текущую цену - это цена LastPrice, которая передается вместе со стаканом заявок
-            var orderbook = await _context.MarketOrderbookAsync(tradePosition.PortfolioPosition.Figi, 1);
+            var orderbook = await _context.MarketOrderbookAsync(tradePosition.Figi, 1);
             tradePosition.LastPrice = orderbook.LastPrice;
 
             if (tradePosition.PortfolioPosition == null)
